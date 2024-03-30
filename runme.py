@@ -279,57 +279,47 @@ class StartPage(tk.Frame):
             if(deviceName == "K2450"):
                 print()
                 self.connectedDevices.append(Keithley2450(IPV4))
-                self.connected = True
+                self.connectedDevice()
                
             elif(deviceName == "K2400"):
                 self.connectedDevices.append(Keithley2400(IPV4))
-                self.connected = True
-               
-            if(self.connected):
-                self.menu.entryconfigure(1, label = "✔" + str(len(self.connectedDevices)) + "Connected")
-               
-                #Initialize SMU parameters
-                self.connectedDevices[-1].reset()
-                self.connectedDevices[-1].use_front_terminals()
-               
-                self.window.destroy()
+                self.connectedDevice()
         except Exception as e:
             self.ipConnected = False
             self.errorBox(e)
 
-    def connectUSB(self):
+    def connectUSB(self, deviceName):
+        print(deviceName)
+        self.connectedDevices.append(None)
+        #self.connectedDevice()
         self.connected = True
-       
         #USB0::0x05e6::0x2450::[serial number]::INSTR
         return(None)
     def connectGPIB(self, deviceName):
        
         GPIB = "GPIB::1"
-       
         try:
             if(deviceName == "K2450"):
                 print()
                 self.connectedDevices.append(Keithley2450(GPIB))
-                self.connected = True
+                self.connectedDevice()
                
             elif(deviceName == "K2400"):
                 self.connectedDevices.append(Keithley2400(GPIB))
-                self.connected = True
-               
-            if(self.connected):
-                self.menu.entryconfigure(1, label = "✔" + str(len(self.connectedDevices)) + "Connected")
-               
-                #Initialize SMU parameters
-                self.connectedDevices[-1].reset()
-                self.connectedDevices[-1].use_front_terminals()
-
+                self.connectedDevice()
+                
         except Exception as e:
             self.ipConnected = False
             self.errorBox(e)
-       
-       
-       
-       
+    def connectedDevice(self):
+        self.menu.entryconfigure(1, label = "✔" + str(len(self.connectedDevices)) + "Connected")
+        #Initialize SMU parameters
+        try:
+            self.connectedDevices[-1].reset()
+            self.connectedDevices[-1].use_front_terminals()
+            self.connected = True
+        except Exception as e:
+            self.errorBox(e)
 class RunInformation(tk.Frame):
     def __init__(self, parent, controller):
         self.controller = controller
@@ -404,29 +394,29 @@ class RunInformation(tk.Frame):
             self.smu.shutdown()
         except Exception as e:
             self.errorBox(e)
-    def saveAll(self):
-        self.selectSaveLocation()
-       
-        #Graph Saving
-        self.graphFileName = self.saveLocation + self.TestName + "graph.png"
-        self.fig.savefig(self.graphFileName)
-       
-        #Raw data saving
-        csv_filename = self.saveLocation + self.TestName + "measurement_data.csv"
+    def saveCSV(self, saveLocation):
+        csv_filename = saveLocation + self.TestName + "measurement_data.csv"
         with open(csv_filename, mode='w', newline='') as file:
             writer = csv.writer(file)
-            writer.writerow(["Voltage (V)", "Current (A)", "Time"])
+            writer.writerow(["Voltage (V)", "Current (A)"])
             writer.writerows(self.data)
-           
+    def saveAll(self):
+        saveLocation = self.selectSaveLocation()
+       
+        #Graph Saving
+        graphFileName = saveLocation + self.TestName + "graph.png"
+        self.fig.savefig(graphFileName)
+        self.saveCSV(self.saveLocation)
         self.quitConformation("All data has been saved, are you sure you want to quit?")
        
     def saveRaw(self):
-        self.selectSaveLocation()
+        saveLocation = self.selectSaveLocation()
+        self.saveCSV(saveLocation)
         self.quitConformation("Are you sure you want to quit without saving the graph?")
        
     def selectSaveLocation(self):
-        self.saveLocation = tk.filedialog.askdirectory(initialdir = '/', title = 'Select Save Directory')
-       
+        saveLocation = tk.filedialog.askdirectory(initialdir = '/', title = 'Select Save Directory')
+        return saveLocation
     def quitConformation(self, quitText = ""):
         window = tk.Toplevel()
         self.window = window
