@@ -60,6 +60,12 @@ class StartPage(tk.Frame):
         self.connectedDevices = []
         self.testType = "Diode"
         self.connected = False
+        
+        self.device1 = None
+        self.device2 = None
+        
+        self.device1Options = ["Select Device 1"]
+        self.device2Options = ["Select Device 2", "DC Power Supply"]
        
         #Menu Setup
         self.menu = tk.Menu(self)
@@ -73,14 +79,16 @@ class StartPage(tk.Frame):
        
         self.menu.add_cascade(label="Connect to...", menu = self.device_menu)
         self.menu.add_cascade(label="Change Test", menu = self.test_menu)
-
+        
         self.device_menu.add_cascade(label = "Keithely 2450", menu = self.connectK2450_menu)
         self.device_menu.add_cascade(label = "Keithely 2400", menu = self.connectK2400_menu)
 
+        #K2450 Sub Menu Commands
         self.connectK2450_menu.add_command(label = "USB", command = lambda: self.connectUSB("K2450"))
         self.connectK2450_menu.add_command(label = "LAN / IP", command = lambda: self.connectIPWindow("K2450"))
         self.connectK2450_menu.add_command(label = "GPIB", command = lambda: self.connectGPIB("K2450"))      
 
+        #K2400 Sub Menu Commands
         self.connectK2400_menu.add_command(label = "USB", command = lambda: self.connectUSB("K2400"))
         self.connectK2400_menu.add_command(label = "GPIB", command = lambda: self.connectGPIB("K2400"))
 
@@ -92,7 +100,16 @@ class StartPage(tk.Frame):
         self.TestTransistorLabel = tk.Label(self, text = "Transistor Testing", font = LARGE_FONT)
         self.TestNameLabel = tk.Label(self, text = "Test Name", font = R_FONT)
         self.TestName = tk.Entry(self)
-        self.GraphTitle = tk.Label(self, text = "Input Curve Preview", font = LARGE_FONT)
+        self.GraphTitle = tk.Label(self, text = "Input Curve Preview", font = LARGE_FONT)\
+        
+        self.device1 = tk.StringVar(self)    
+        self.device2 = tk.StringVar(self)
+        
+        self.device1.set("Select Device 1")
+        self.device2.set("Select Device 2")
+        
+        self.selectDevice1 = tk.OptionMenu(self, self.device1, *self.device1Options)
+        self.selectDevice2 = tk.OptionMenu(self, self.device2, *self.device2Options)
 
         #Gate Voltage Labels
         self.VgLabel = tk.Label(self, text = "Vg", font = R_FONT)
@@ -138,9 +155,12 @@ class StartPage(tk.Frame):
 
         #Formatting
         self.TestDiodeLabel.grid(row = 0, column = 1, sticky = 'nsew', columnspan = 7)
-        self.TestNameLabel.grid(row = 1, column = 4, sticky = 'nsew')
+        self.TestNameLabel.grid(row = 1, column = 3, sticky = 'nsew')
         self.GraphTitle.grid(column = 8, row = 0)
-        self.TestName.grid(row = 1, column = 5)
+        self.TestName.grid(row = 1, column = 4)
+        
+        self.selectDevice1.grid(row = 1, column = 6)
+        
         '''
         self.VgMin.grid(row = 2, column = 2)
         self.VgMax.grid(row = 2, column = 4)
@@ -151,6 +171,7 @@ class StartPage(tk.Frame):
         self.VgStepLabel.grid(row = 2, column = 5, sticky = "nsew")
         self.VgStepUnitsLabel.grid(row = 2, column = 7, sticky = "nsew")
         '''
+        
         self.VdMin.grid(row = 3, column = 2)
         self.VdMax.grid(row = 3, column = 4)
         self.VdStep.grid(row = 3, column = 6)
@@ -159,23 +180,19 @@ class StartPage(tk.Frame):
         self.VdMaxLabel.grid(row = 3, column = 3, sticky = "nsew")
         self.VdStepLabel.grid(row = 3, column = 5, sticky = "nsew")
         self.VdStepUnitsLabel.grid(row = 3, column = 7, sticky = "nsew")
-       
         self.RunDiodeBtn.grid(row = 4, column = 5)
        
         #Graphing of Input Curve
         self.fig = Figure(figsize = (4, 3), dpi = 100, facecolor = "#F0F0F0", constrained_layout = True)
         self.ax = self.fig.add_subplot(111)
         self.box = self.ax.get_position()
-       
         self.ax.set_xlabel("V", loc = 'right', fontsize = 8)
         self.ax.get_yaxis().set_visible(False)
-        #self.ax.set_ylabel("Vd", loc = 'top', fontsize = 8)
-       
         self.fig.tight_layout()
-       
         self.canvas = FigureCanvasTkAgg(self.fig, master = self)
         self.canvas.draw()
         self.canvas.get_tk_widget().grid(row = 1, column = 8, rowspan = 3, padx = 30, pady = 20)
+        
     def switchToTransistor(self):
         self.TestTransistorLabel.grid(row = 0, column = 1, sticky = 'nsew', columnspan = 7)
         self.VgMin.grid(row = 2, column = 2)
@@ -187,11 +204,17 @@ class StartPage(tk.Frame):
         self.VgStepLabel.grid(row = 2, column = 5, sticky = "nsew")
         self.VgStepUnitsLabel.grid(row = 2, column = 7, sticky = "nsew")
         self.RunTransistorBtn.grid(row = 4, column = 5)
+        
+        
+        
         if(self.testType == "Diode"):
             self.TestDiodeLabel.grid_remove()
-            self.RunDiodeBtn.grid_remove()  
+            self.RunDiodeBtn.grid_remove() 
+            
+        self.selectDevice1.grid(row = 1, column = 6)
+        self.selectDevice2.grid(row = 1, column = 7)
         self.testType = "Transistor"
-        print(self.testType)
+        
     def switchToDiode(self):
         self.TestDiodeLabel.grid(row = 0, column = 1, sticky = 'nsew', columnspan = 7)
         self.RunDiodeBtn.grid(row = 4, column = 5)
@@ -206,24 +229,25 @@ class StartPage(tk.Frame):
             self.VgStepUnitsLabel.grid_remove()
             self.RunTransistorBtn.grid_remove()
             self.TestTransistorLabel.grid_remove()
+            
+            self.selectDevice2.grid_remove()
         self.testType = "Diode"
        
     def updateGraph(self, var, index, mode):
         self.ax.cla()
-       
         if(self.testType == "Diode"):
             self.ax.set_xlabel("V", loc = 'right', fontsize = 8)
             if (self.VdMin.get() and self.VdMax.get() and self.VdStep.get()):
                 self.VdPoints = np.linspace(float(self.VdMin.get()), float(self.VdMax.get()), int(self.VdStep.get()))
                 self.VgPoints = [0]
-               
                 #Vg is Y Vd is X            
                 #Generate point matrix
                 for point in self.VgPoints:
                     self.yArray = np.ones((1, int(self.VdStep.get()))) * point
                     self.ax.scatter(self.VdPoints, self.yArray, label = str(point), s = self.GRAPH_POINT_SIZE)
-   
+                    
                 self.canvas.draw()
+                
         elif(self.testType == "Transistor"):
             self.ax.set_xlabel("Vd", loc = 'right', fontsize = 8)
             self.ax.set_ylabel("Vg", loc = 'top', fontsize = 8)
@@ -237,18 +261,19 @@ class StartPage(tk.Frame):
                 for point in self.VgPoints:
                     self.yArray = np.ones((1, int(self.VdStep.get()))) * point
                     self.ax.scatter(self.VdPoints, self.yArray, label = str(point), s = self.GRAPH_POINT_SIZE)
-   
                 self.canvas.draw()
                
     def runTest(self, testType):
-
+        
         try:
+            
             if self.connected:
                 self.controller.event_generate("<<ShowFrame - " +  testType + ">>")
                 self.controller.show_frame(RunInformation)
                 y = 1
         except:
             self.errorBox("No device connected")
+            
     def errorBox(self, errorMsg):
         window = tk.Toplevel()
         self.window = window
@@ -265,7 +290,6 @@ class StartPage(tk.Frame):
         self.IPEntry = tk.Entry(self.window)
         button_close = tk.Button(self.window, text="Cancel", command=self.window.destroy)    
         button_accept = tk.Button(self.window, text="Connect", command = lambda: self.connectIP(deviceName))
-       
         title.grid(row = 0, column = 0, columnspan=2)
         instructions.grid(row = 1, column = 0, columnspan = 2)
         self.IPEntry.grid(row = 2, column = 0, columnspan = 2)
@@ -274,15 +298,17 @@ class StartPage(tk.Frame):
        
     def connectIP(self, deviceName):
         IPV4 = "TCPIP::" + self.IPEntry.get() + "::INSTR"
-       
         try:
             if(deviceName == "K2450"):
-                print()
                 self.connectedDevices.append(Keithley2450(IPV4))
+                self.device1Options.append("Keithley2450")
+                self.selectDevice1["menu"].add_command(label = self.device1Options[-1], command=lambda value=self.device1Options[-1]: self.device1.set(value))
                 self.connected = True
                
             elif(deviceName == "K2400"):
                 self.connectedDevices.append(Keithley2400(IPV4))
+                self.device1Options.append("Keithley2400")
+                self.selectDevice1["menu"].add_command(label = self.device1Options[-1], command=lambda value=self.device1Options[-1]: self.device1.set(value))
                 self.connected = True
                
             if(self.connected):
@@ -299,21 +325,22 @@ class StartPage(tk.Frame):
 
     def connectUSB(self):
         self.connected = True
-       
         #USB0::0x05e6::0x2450::[serial number]::INSTR
         return(None)
+    
     def connectGPIB(self, deviceName):
-       
         GPIB = "GPIB::1"
-       
         try:
             if(deviceName == "K2450"):
-                print()
                 self.connectedDevices.append(Keithley2450(GPIB))
+                self.device1Options.append("Keithley2450")
+                self.selectDevice1["menu"].add_command(label = self.device1Options[-1], command=lambda value=self.device1Options[-1]: self.device1.set(value))
                 self.connected = True
                
             elif(deviceName == "K2400"):
                 self.connectedDevices.append(Keithley2400(GPIB))
+                self.device1Options.append("Keithley2400")
+                self.selectDevice1["menu"].add_command(label = self.device1Options[-1], command=lambda value=self.device1Options[-1]: self.device1.set(value))
                 self.connected = True
                
             if(self.connected):
@@ -326,10 +353,7 @@ class StartPage(tk.Frame):
         except Exception as e:
             self.ipConnected = False
             self.errorBox(e)
-       
-       
-       
-       
+
 class RunInformation(tk.Frame):
     def __init__(self, parent, controller):
         self.controller = controller
@@ -358,6 +382,7 @@ class RunInformation(tk.Frame):
         self.QuitBtn.place(x = 210, y = 250)
         self.canvas.get_tk_widget().place(x = 500, y = 20)
         self.IV_curve_data = []
+        
         '''
         for Vg in self.controller.VgPoints:
             self.smu.source_voltage = Vg
@@ -371,6 +396,7 @@ class RunInformation(tk.Frame):
 
         self.smu.shutdown()
         '''
+        
     def runSMU(self):
         try:
             self.smu = self.controller.smu
@@ -404,6 +430,7 @@ class RunInformation(tk.Frame):
             self.smu.shutdown()
         except Exception as e:
             self.errorBox(e)
+            
     def saveAll(self):
         self.selectSaveLocation()
        
@@ -442,9 +469,10 @@ class RunInformation(tk.Frame):
         button_close.grid(row = 1, column = 0, sticky = "nse")
         button_cancel.grid(row = 1, column = 1, sticky = "nsw")
        
-    def twoWindowsOneCommand(self):
+    def twoWindowsOneCommand(self, page = StartPage):
         self.window.destroy()
-        self.controller.show_frame(StartPage)
+        self.controller.show_frame(page)
+        
     def errorBox(self, errorMsg):
         window = tk.Toplevel()
         self.window = window
@@ -452,5 +480,6 @@ class RunInformation(tk.Frame):
         button_close = tk.Button(window, text="Cancel", command=self.window.destroy)        
         label.grid(row = 0, column = 0)
         button_close.grid(row = 1, column = 0, sticky = "nsew")
+        
 app = SMU_GUI()
 app.mainloop()
