@@ -264,15 +264,41 @@ class StartPage(tk.Frame):
                 self.canvas.draw()
                
     def runTest(self, testType):
-        
         try:
-            
             if self.connected:
-                self.controller.event_generate("<<ShowFrame - " +  testType + ">>")
+                self.smu = self.controller.smu
+                self.trigger = self.smu.trigger()
+               
+                self.smu.defbuffer1.clear()
+                self.smu.measure.func = self.smu.FUNC_DC_CURRENT
+                self.smu.source.fun = self.smu.FUNC_DC_VOLTAGE
+               
+                self.smu.measure.sense = self.smu.SENSE_4WIRE
+                self.smu.measure.autorange = self.smu.ON
+                self.smu.measure.np1c = 1
+               
+                self.smu.source.highc = self.smu.OFF
+                self.smu.source.range = 2
+                self.smu.source.ilimit.level = 1
+                self.smu.source.sweeplinear("diode", self.controller.VgMin.get(), self.controller.VgMax.get(), self.controller.VgSteps.get(), 0.1)
+               
+                self.trigger.initiate()
+                self.trigger.waitcomplete()
+               
+                self.data = []
+                if self.smu.defbuffer1.n == 0:
+                    self.errorBox("Buffer is empty")
+                else:
+                    for i in range(1, self.defbuffer1.n + 1):
+                        self.data.append([
+                            self.defbuffer1.sourcevalues[i],
+                            self.defbuffer1.readings[i],
+                            self.defbuffer1.relativetimestamps[i]])
+                self.smu.shutdown()
+
                 self.controller.show_frame(RunInformation)
-                y = 1
-        except:
-            self.errorBox("No device connected")
+        except Exception as e:
+            self.errorBox(e)
             
     def errorBox(self, errorMsg):
         window = tk.Toplevel()
@@ -301,7 +327,7 @@ class StartPage(tk.Frame):
         try:
             if(deviceName == "K2450"):
                 self.connectedDevices.append(Keithley2450(IPV4))
-		self.device1Options.append("Keithley2450")
+                self.device1Options.append("Keithley2450")
                 self.selectDevice1["menu"].add_command(label = self.device1Options[-1], command=lambda value=self.device1Options[-1]: self.device1.set(value))
                 self.connectedDevice()
                
@@ -316,7 +342,6 @@ class StartPage(tk.Frame):
             self.errorBox(e)
 
     def connectUSB(self, deviceName):
-        print(deviceName)
         self.connectedDevices.append(None)
         #self.connectedDevice()
         self.connected = True
@@ -328,13 +353,13 @@ class StartPage(tk.Frame):
         try:
             if(deviceName == "K2450"):
                 self.connectedDevices.append(Keithley2450(GPIB))
-		self.device1Options.append("Keithley2450")
+                self.device1Options.append("Keithley2450")
                 self.selectDevice1["menu"].add_command(label = self.device1Options[-1], command=lambda value=self.device1Options[-1]: self.device1.set(value))
                 self.connectedDevice()
                
             elif(deviceName == "K2400"):
                 self.connectedDevices.append(Keithley2400(GPIB))
-		self.device1Options.append("Keithley2400")
+                self.device1Options.append("Keithley2400")
                 self.selectDevice1["menu"].add_command(label = self.device1Options[-1], command=lambda value=self.device1Options[-1]: self.device1.set(value))
                 self.connectedDevice()
                 
@@ -356,8 +381,8 @@ class RunInformation(tk.Frame):
     def __init__(self, parent, controller):
         self.controller = controller
         tk.Frame.__init__(self, parent)
+        #"<<ShowFrame - " +  testType + ">>"
         #Bind to runSMU when the frame is shown so it doesn't look for nonexistent information
-        self.bind("<<ShowFrame>>", self.runSMU)
        
         #Control Buttons
         self.SaveALLBtn = tk.Button(self, text = "Quit and Save All")
@@ -394,41 +419,12 @@ class RunInformation(tk.Frame):
 
         self.smu.shutdown()
         '''
-        
     def runSMU(self):
-        try:
-            self.smu = self.controller.smu
-            self.trigger = self.smu.trigger()
-           
-            self.smu.defbuffer1.clear()
-            self.smu.measure.func = self.smu.FUNC_DC_CURRENT
-            self.smu.source.fun = self.smu.FUNC_DC_VOLTAGE
-           
-            self.smu.measure.sense = self.smu.SENSE_4WIRE
-            self.smu.measure.autorange = self.smu.ON
-            self.smu.measure.np1c = 1
-           
-            self.smu.source.highc = self.smu.OFF
-            self.smu.source.range = 2
-            self.smu.source.ilimit.level = 1
-            self.smu.source.sweeplinear("diode", self.controller.VgMin.get(), self.controller.VgMax.get(), self.controller.VgSteps.get(), 0.1)
-           
-            self.trigger.initiate()
-            self.trigger.waitcomplete()
-           
-            self.data = []
-            if self.smu.defbuffer1.n == 0:
-                self.errorBox("Buffer is empty")
-            else:
-                for i in range(1, self.defbuffer1.n + 1):
-                    self.data.append([
-                        self.defbuffer1.sourcevalues[i],
-                        self.defbuffer1.readings[i],
-                        self.defbuffer1.relativetimestamps[i]])
-            self.smu.shutdown()
-        except Exception as e:
-            self.errorBox(e)
-
+        print("Running Transistor")
+        device1 = self.controller.device1
+        print(device1)
+        '''
+        '''
     def saveCSV(self, saveLocation):
         csv_filename = saveLocation + self.TestName + "measurement_data.csv"
 
